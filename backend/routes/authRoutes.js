@@ -1,7 +1,12 @@
 import express from "express";
 import User from "../models/User.model.js";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
+
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "15d" });
+};
 
 router.post("/register", async(req, res) => {
     try {
