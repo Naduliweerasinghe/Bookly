@@ -33,29 +33,40 @@ export default function Home() {
       if (refresh) setRefreshing(true);
       else if (pageNum === 1) setLoading(true);
 
+      console.log(`Fetching books from: ${API_URL}/books?page=${pageNum}&limit=2`);
+      console.log('Token available:', !!token);
+
       const response = await fetch(`${API_URL}/books?page=${pageNum}&limit=2`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to fetch books");
+      console.log('Books API Response:', { status: response.status, data });
 
-      // todo fix it later
-      // setBooks((prevBooks) => [...prevBooks, ...data.books]);
+      if (!response.ok) {
+        console.error('Books API Error:', data);
+        throw new Error(data.message || "Failed to fetch books");
+      }
 
-      const uniqueBooks =
-        refresh || pageNum === 1
-          ? data.books
-          : Array.from(new Set([...books, ...data.books].map((book) => book._id))).map((id) =>
-              [...books, ...data.books].find((book) => book._id === id)
-            );
+      // Simplified logic for better debugging
+      const newBooks = refresh || pageNum === 1 ? data.books : [...books, ...data.books];
+      
+      // Remove duplicates based on _id
+      const uniqueBooks = newBooks.filter((book, index, self) => 
+        index === self.findIndex((b) => b._id === book._id)
+      );
 
+      console.log(`Loaded ${uniqueBooks.length} unique books`);
       setBooks(uniqueBooks);
 
       setHasMore(pageNum < data.totalPages);
       setPage(pageNum);
     } catch (error) {
-      console.log("Error fetching books", error);
+      console.error("Error fetching books:", error);
+      console.error("Error details:", error.message);
     } finally {
       if (refresh) {
         await sleep(800);
@@ -74,27 +85,41 @@ export default function Home() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.bookCard}>
-      <View style={styles.bookHeader}>
-        <View style={styles.userInfo}>
-          <Image source={{ uri: item.user.profileImage }} style={styles.avatar} />
-          <Text style={styles.username}>{item.user.username}</Text>
+  const renderItem = ({ item }) => {
+    console.log('Rendering book item:', { title: item.title, imageUrl: item.image, user: item.user?.username });
+    
+    return (
+      <View style={styles.bookCard}>
+        <View style={styles.bookHeader}>
+          <View style={styles.userInfo}>
+            <Image 
+              source={{ uri: item.user?.profileImage || 'https://via.placeholder.com/40' }} 
+              style={styles.avatar} 
+              contentFit="cover"
+            />
+            <Text style={styles.username}>{item.user?.username || 'Unknown User'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.bookImageContainer}>
+          <Image 
+            source={{ uri: item.image }} 
+            style={styles.bookImage} 
+            contentFit="cover"
+            placeholder="📚"
+            onError={(error) => console.log('Image load error:', error)}
+          />
+        </View>
+
+        <View style={styles.bookDetails}>
+          <Text style={styles.bookTitle}>{item.title}</Text>
+          <View style={styles.ratingContainer}>{renderRatingStars(item.rating)}</View>
+          <Text style={styles.caption}>{item.caption}</Text>
+          <Text style={styles.date}>Shared on {formatPublishDate(item.createdAt)}</Text>
         </View>
       </View>
-
-      <View style={styles.bookImageContainer}>
-        <Image source={item.image} style={styles.bookImage} contentFit="cover" />
-      </View>
-
-      <View style={styles.bookDetails}>
-        <Text style={styles.bookTitle}>{item.title}</Text>
-        <View style={styles.ratingContainer}>{renderRatingStars(item.rating)}</View>
-        <Text style={styles.caption}>{item.caption}</Text>
-        <Text style={styles.date}>Shared on {formatPublishDate(item.createdAt)}</Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderRatingStars = (rating) => {
     const stars = [];

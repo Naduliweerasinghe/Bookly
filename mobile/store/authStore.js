@@ -11,6 +11,7 @@ export const useAuthStore = create((set) => ({
   register: async (username, email, password) => {
     set({ isLoading: true });
     try {
+      console.log('Attempting to register with URL:', `${API_URL}/auth/register`);
       const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
@@ -24,6 +25,7 @@ export const useAuthStore = create((set) => ({
       });
 
       const data = await response.json();
+      console.log('Register response:', { status: response.status, data });
 
       if (!response.ok) throw new Error(data.message || "Something went wrong");
 
@@ -34,6 +36,7 @@ export const useAuthStore = create((set) => ({
 
       return { success: true };
     } catch (error) {
+      console.log('Register error:', error);
       set({ isLoading: false });
       return { success: false, error: error.message };
     }
@@ -43,6 +46,7 @@ export const useAuthStore = create((set) => ({
     set({ isLoading: true });
 
     try {
+      console.log('Attempting to login with URL:', `${API_URL}/auth/login`);
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
@@ -55,6 +59,7 @@ export const useAuthStore = create((set) => ({
       });
 
       const data = await response.json();
+      console.log('Login response:', { status: response.status, data });
 
       if (!response.ok) throw new Error(data.message || "Something went wrong");
 
@@ -65,6 +70,7 @@ export const useAuthStore = create((set) => ({
 
       return { success: true };
     } catch (error) {
+      console.log('Login error:', error);
       set({ isLoading: false });
       return { success: false, error: error.message };
     }
